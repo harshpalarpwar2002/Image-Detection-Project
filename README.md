@@ -37,10 +37,3 @@ image-detection-project/
 
 ---
 
-
-### 1️⃣ Clone the repository
-```bash
-git clone https://github.com/your-username/image-detection-project.git
-cd image-detection-project
-
----
