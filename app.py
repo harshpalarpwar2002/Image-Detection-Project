@@ -2,40 +2,58 @@ import streamlit as st
 from ultralytics import YOLO
 from PIL import Image
 import numpy as np
-import cv2
-import tempfile
 
 # Page configuration
-st.set_page_config(page_title="YOLO Object Detection", layout="centered")
+st.set_page_config(page_title="YOLO11 Object Detection", layout="wide")
 
-st.title("🔍 YOLO Object Detection App")
-st.write("Upload an image and detect objects using YOLO model")
+st.title("🚀 YOLO11 Object Detection App")
+st.write("Upload an image to detect objects using the YOLO11n model.")
 
-# Load YOLO model
+# Load the model
 @st.cache_resource
 def load_model():
-    return YOLO("yolo11n.pt")
+    return YOLO('yolo11n.pt')
 
 model = load_model()
 
-# Image upload
-uploaded_file = st.file_uploader("Upload an Image", type=["jpg", "jpeg", "png"])
+# Sidebar for configuration
+st.sidebar.header("Settings")
+conf_threshold = st.sidebar.slider("Confidence Threshold", 0.0, 1.0, 0.25)
+
+# File uploader
+uploaded_file = st.file_uploader("Choose an image...", type=["jpg", "jpeg", "png"])
 
 if uploaded_file is not None:
-    # Read image
+    # Convert uploaded file to PIL Image
     image = Image.open(uploaded_file)
-    st.image(image, caption="Uploaded Image", use_container_width=True)
-
-    # Convert image for YOLO
-    image_np = np.array(image)
-
-    # Perform detection
-    results = model(image_np)
-
-    # Plot results
-    annotated_img = results[0].plot()
-
-    # Convert BGR to RGB
+    
+    # Create two columns for side-by-side view
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.subheader("Original Image")
+        st.image(image, use_container_width=True)
+    
+    # Run Inference
+    with st.spinner('Detecting...'):
+        # Convert PIL to numpy for YOLO
+        img_array = np.array(image)
+        results = model.predict(img_array, conf=conf_threshold)
+        
+        # Plot results
+        res_plotted = results[0].plot() # This returns a BGR numpy array
+        
+    with col2:
+        st.subheader("Detection Result")
+        # Streamlit expects RGB, so we show the plotted result
+        st.image(res_plotted, channels="BGR", use_container_width=True)
+        
+    # Show detection details in an expander
+    with st.expander("See Detection Details"):
+        for result in results:
+            boxes = result.boxes
+            for box in boxes:
+                st.write(f"Detected **{model.names[int(box.cls)]}** with {box.conf[0]:.2f} confidence")
     annotated_img = cv2.cvtColor(annotated_img, cv2.COLOR_BGR2RGB)
 
     st.image(annotated_img, caption="Detected Objects", use_container_width=True)
