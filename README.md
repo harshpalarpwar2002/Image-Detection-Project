@@ -34,6 +34,9 @@ image-detection-project/
 └── README.md
 
 
+#Output
 
----
+<img width="1598" height="794" alt="Screenshot 2026-01-08 135143" src="https://github.com/user-attachments/assets/689d0cfc-5446-46a6-bcef-1af1feffb337" />
 
+
+<img width="1572" height="812" alt="Screenshot 2026-01-08 131738" src="https://github.com/user-attachments/assets/7f0cc17a-bf42-4b65-ba2b-6573d1c7c98a" />
