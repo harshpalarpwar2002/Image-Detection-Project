@@ -54,6 +54,3 @@ if uploaded_file is not None:
             boxes = result.boxes
             for box in boxes:
                 st.write(f"Detected **{model.names[int(box.cls)]}** with {box.conf[0]:.2f} confidence")
-    annotated_img = cv2.cvtColor(annotated_img, cv2.COLOR_BGR2RGB)
-
-    st.image(annotated_img, caption="Detected Objects", use_container_width=True)
