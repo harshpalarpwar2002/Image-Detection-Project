@@ -14,7 +14,6 @@ It allows users to upload an image and detect objects with bounding boxes and co
 - Simple and interactive Streamlit UI
 - Deployed on Streamlit Cloud
 
----
 
 ## 🛠️ Technologies Used
 - Python 3.10
@@ -24,6 +23,7 @@ It allows users to upload an image and detect objects with bounding boxes and co
 - OpenCV
 - NumPy
 - Pillow
+  
 
 ## 📂 Project Structure
 image-detection-project/
@@ -32,6 +32,11 @@ image-detection-project/
 ├── requirements.txt
 ├── runtime.txt
 └── README.md
+
+## 🌐 Live Demo
+
+👉 **Streamlit App:**  
+[https://image-detection-project-admrwn53d9asmxpdcnnfti.streamlit.app/]
 
 
 ## 📸 Project Output
