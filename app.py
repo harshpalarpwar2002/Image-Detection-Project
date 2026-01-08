@@ -48,4 +48,35 @@ if uploaded_file:
                 cv2.imwrite(temp_path, img_bgr)
 
             # Run YOLO
-            results = model(t
+            results = model(temp_path)
+
+            # Remove temp file
+            os.remove(temp_path)
+
+            # Plot results
+            annotated = results[0].plot()
+            annotated = cv2.cvtColor(
+                annotated,
+                cv2.COLOR_BGR2RGB
+            )
+
+            st.image(
+                annotated,
+                caption="Detection Result",
+                use_container_width=True
+            )
+
+            # Display detections
+            st.subheader("📊 Detected Objects")
+
+            if len(results[0].boxes) == 0:
+                st.info("No objects detected.")
+            else:
+                for box in results[0].boxes:
+                    cls_id = int(box.cls.item())
+                    conf = float(box.conf.item())
+                    label = model.names[cls_id]
+
+                    st.write(
+                        f"**{label}** — Confidence: `{conf:.2f}`"
+                    )
