@@ -2,47 +2,44 @@ import streamlit as st
 from ultralytics import YOLO
 from PIL import Image
 import numpy as np
-import cv2
-import tempfile
-import os
 
-st.set_page_config(page_title="YOLOv11 Detection")
+# Page configuration
+st.set_page_config(page_title="YOLO11 Object Detection", layout="wide")
 
-st.title("🧠 YOLOv11 Image Object Detection")
+st.title("🚀 YOLO11 Object Detection App")
+st.write("Upload an image to see the model in action!")
 
-@st.cache_resource
-def load_model():
-    return YOLO("yolo11n.pt")
+# Load the model
+# Ensure 'yolo11n.pt' is in the same directory as this script
+model = YOLO('yolo11n.pt')
 
-model = load_model()
+# File uploader
+uploaded_file = st.file_uploader("Choose an image...", type=["jpg", "jpeg", "png"])
 
-uploaded_file = st.file_uploader(
-    "Upload an image",
-    type=["jpg", "jpeg", "png", "webp"]
-)
+if uploaded_file is not None:
+    # Convert the file to an image
+    image = Image.open(uploaded_file)
+    
+    # Create two columns for side-by-side view
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.header("Original Image")
+        st.image(image, use_container_width=True)
 
-if uploaded_file:
-    image = Image.open(uploaded_file).convert("RGB")
-    st.image(image, use_container_width=True)
-
-    if st.button("Detect Objects"):
-        with st.spinner("Detecting..."):
-            img = np.array(image)
-            img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
-
-            with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as tmp:
-                cv2.imwrite(tmp.name, img)
-                results = model(tmp.name)
-
-            os.remove(tmp.name)
-
-            annotated = results[0].plot()
-            annotated = cv2.cvtColor(annotated, cv2.COLOR_BGR2RGB)
-
-            st.image(annotated, use_container_width=True)
-
-            st.subheader("Detected Objects")
+    with col2:
+        st.header("Detection Result")
+        # Run inference
+        results = model(image)
+        
+        # Plot the results on the image (returns a numpy array)
+        annotated_img = results[0].plot()
+        
+        # Display the annotated image
+        st.image(annotated_img, channels="BGR", use_container_width=True)
+        
+        # Optional: Show detection details
+        with st.expander("See detection details"):
+            st.write(results[0].probs if results[0].probs else "Objects detected:")
             for box in results[0].boxes:
-                cls = int(box.cls.item())
-                conf = float(box.conf.item())
-                st.write(f"**{model.names[cls]}** — {conf:.2f}")
+                st.write(f"Class: {model.names[int(box.cls)]}, Conf: {box.conf[0]:.2f}")
