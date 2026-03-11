@@ -1,78 +1,66 @@
 import streamlit as st
-from ultralytics import YOLO
-from PIL import Image
+import cv2
 import numpy as np
+from PIL import Image
 
-# --- PAGE CONFIG ---
-st.set_page_config(page_title="YOLO11 Object Detection", page_icon="🎯", layout="wide")
+st.title("Image Detection System using YOLO")
 
-# --- CUSTOM CSS FOR MODERN LOOK ---
-st.markdown("""
-    <style>
-    .main { background-color: #f5f7f9; }
-    .stButton>button { width: 100%; border-radius: 5px; height: 3em; background-color: #ff4b4b; color: white; }
-    .stMetric { background-color: #ffffff; padding: 15px; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-    </style>
-    """, unsafe_allow_html=True)
+# Load YOLO model
+net = cv2.dnn.readNet("yolov3.weights", "yolov3.cfg")
 
-# --- MODEL LOADING (CACHED) ---
-@st.cache_resource
-def load_model(model_path):
-    return YOLO(model_path)
+# Load class labels
+with open("coco.names", "r") as f:
+    classes = [line.strip() for line in f.readlines()]
 
-# --- SIDEBAR SETTINGS ---
-st.sidebar.title("⚙️ Settings")
-model_type = st.sidebar.selectbox("Select Model Size", ["yolo11n.pt", "yolo11s.pt", "yolo11m.pt"])
-conf_threshold = st.sidebar.slider("Confidence Threshold", 0.0, 1.0, 0.25)
-model = load_model(model_type)
+layer_names = net.getLayerNames()
+output_layers = [layer_names[i - 1] for i in net.getUnconnectedOutLayers()]
 
-# --- MAIN UI ---
-st.title("🎯 YOLO11 Object Detection")
-st.write("Upload an image to see the model in action.")
-
-uploaded_file = st.file_uploader("Choose an image...", type=["jpg", "jpeg", "png"])
+uploaded_file = st.file_uploader("Upload an Image", type=["jpg","png","jpeg"])
 
 if uploaded_file is not None:
-    # Convert uploaded file to PIL Image
-    img = Image.open(uploaded_file)
     
-    # Run Inference
-    with st.spinner('Running detection...'):
-        results = model.predict(img, conf=conf_threshold)
-        
-        # Plot the results on the image
-        # result[0].plot() returns a BGR numpy array
-        res_plotted = results[0].plot()[:, :, ::-1] # Convert BGR to RGB
-        
-    # Layout: Two columns for Original vs Detected
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        st.subheader("Original Image")
-        st.image(img, use_container_width=True)
-        
-    with col2:
-        st.subheader("Detections")
-        st.image(res_plotted, use_container_width=True)
+    image = Image.open(uploaded_file)
+    img = np.array(image)
 
-    # --- DETECTION SUMMARY ---
-    st.divider()
-    st.subheader("📊 Detection Summary")
-    
-    # Get detection counts
-    boxes = results[0].boxes
-    if len(boxes) > 0:
-        names = model.names
-        detected_classes = [names[int(box.cls)] for box in boxes]
-        counts = {name: detected_classes.count(name) for name in set(detected_classes)}
-        
-        # Display as metrics
-        cols = st.columns(len(counts))
-        for i, (name, count) in enumerate(counts.items()):
-            cols[i].metric(label=name.upper(), value=count)
-    else:
-        st.info("No objects detected with the current confidence threshold.")
+    height, width, channels = img.shape
 
-else:
-    st.info("Please upload an image to start.")
-    st.info("Please upload an image to start.")
+    blob = cv2.dnn.blobFromImage(img, 1/255.0, (416,416), swapRB=True, crop=False)
+    net.setInput(blob)
+
+    outs = net.forward(output_layers)
+
+    class_ids = []
+    confidences = []
+    boxes = []
+
+    for out in outs:
+        for detection in out:
+            scores = detection[5:]
+            class_id = np.argmax(scores)
+            confidence = scores[class_id]
+
+            if confidence > 0.5:
+                center_x = int(detection[0] * width)
+                center_y = int(detection[1] * height)
+                w = int(detection[2] * width)
+                h = int(detection[3] * height)
+
+                x = int(center_x - w / 2)
+                y = int(center_y - h / 2)
+
+                boxes.append([x,y,w,h])
+                confidences.append(float(confidence))
+                class_ids.append(class_id)
+
+    indexes = cv2.dnn.NMSBoxes(boxes, confidences, 0.5, 0.4)
+
+    for i in range(len(boxes)):
+        if i in indexes:
+            x,y,w,h = boxes[i]
+            label = str(classes[class_ids[i]])
+
+            cv2.rectangle(img,(x,y),(x+w,y+h),(0,255,0),2)
+            cv2.putText(img,label,(x,y-10),
+                        cv2.FONT_HERSHEY_SIMPLEX,0.6,(0,255,0),2)
+
+    st.image(img, caption="Detected Objects", use_column_width=True)
