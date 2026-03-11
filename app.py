@@ -75,3 +75,4 @@ if uploaded_file is not None:
 
 else:
     st.info("Please upload an image to start.")
+    st.info("Please upload an image to start.")
